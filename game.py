@@ -190,7 +190,7 @@ class State:
                         (-2,-1)
                     ]:
                         if not self.in_bounds(row+i, col+j): continue
-                        target = self.get_piece(row+i, col-i)
+                        target = self.get_piece(row+i, col+j)
                         if target.colour != player:
                             move(row+i, col+j)
 
