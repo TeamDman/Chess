@@ -138,7 +138,7 @@ def render_board(
     # fill: Dict[Square, str] = {},
     size: Optional[int] = None
 ) -> None:
-    orientation = orientation == "white"
+    orientation = orientation != "white"
 
     margin = 15 if coordinates else 0
     svg = _svg(8 * SQUARE_SIZE + 2 * margin, size)
