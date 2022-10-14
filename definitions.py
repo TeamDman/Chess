@@ -21,17 +21,22 @@ class Piece(Enum):
 
     @property
     def symbol(self) -> str:
-        name = self.name[6:]
-        letter = self.name[6:7]
-        if name == "KNIGHT":
+        letter = self.role[0].upper()
+        if self.role == "knight":
             letter = "N"
-        colour = self.name[0:5]
-        if colour == "BLACK":
+        colour = self.colour
+        if colour == "black":
             letter = letter.lower()
         return letter
 
     @property
-    def colour(self) -> PlayerColour:
+    def role(self) -> str:
+        return self.name[6:].lower()
+
+    @property
+    def colour(self) -> Union[PlayerColour, None]:
+        if self == Piece.AIR:
+            return None
         return self.name[0:5].lower()
 
 
