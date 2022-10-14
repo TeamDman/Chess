@@ -124,12 +124,12 @@ def _coord(text: str, x: int, y: int, width: int, height: int, horizontal: bool,
     return t
 
 
-def render_piece(piece: Piece, size: Optional[int] = None) -> str:
+def piece(piece: Piece, size: Optional[int] = None) -> str:
     svg = _svg(SQUARE_SIZE, size)
     svg.append(ET.fromstring(PIECES[piece.symbol]))
     return SvgWrapper(ET.tostring(svg).decode("utf-8"))
 
-def render_board(
+def board(
     board: Optional[State] = None,
     *, # force named params
     orientation: PlayerColour = "white", 
@@ -198,7 +198,7 @@ def render_board(
 
             # correct the index since we use wacky indexing compared to the chesslib code
             piece = board.get_piece(7-row, col)
-            
+
             if piece != Piece.AIR:
                 id=piece.name.lower().replace("_","-")
                 href = f"#{id}"

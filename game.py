@@ -34,6 +34,10 @@ class State:
     white_king_moved: bool = False
 
     @staticmethod
+    def get_empty_state() -> State:
+        return State(board=torch.zeros(8,8,len(Piece)))
+
+    @staticmethod
     def get_starting_state() -> State:
         board = torch.zeros(8,8,len(Piece))
         board[1,:,Piece.BLACK_PAWN.value] = 1
@@ -67,13 +71,63 @@ class State:
         for row in range(8):
             for col in range(8):
                 piece = self.get_piece(row, col)
+                # WHITE PAWN ADVANCE
                 if player == "white" \
                 and piece == Piece.WHITE_PAWN \
-                and row < 7 \
+                and row > 0 \
                 and self.get_piece(row - 1, col) == Piece.AIR:
                     rtn.append(self.with_pieces([
                         PiecePosition(row,col,Piece.AIR),
                         PiecePosition(row - 1, col, Piece.WHITE_PAWN),
+                    ]))
+                # WHITE PAWN CAPTURE LEFT
+                if player == "white" \
+                and piece == Piece.WHITE_PAWN \
+                and row > 0 \
+                and col > 0 \
+                and self.get_piece(row - 1, col - 1).colour == "black":
+                    rtn.append(self.with_pieces([
+                        PiecePosition(row,col,Piece.AIR),
+                        PiecePosition(row - 1, col - 1, Piece.WHITE_PAWN),
+                    ]))
+                # WHITE PAWN CAPTURE RIGHT
+                if player == "white" \
+                and piece == Piece.WHITE_PAWN \
+                and row > 0 \
+                and col < 7 \
+                and self.get_piece(row - 1, col + 1).colour == "black":
+                    rtn.append(self.with_pieces([
+                        PiecePosition(row,col,Piece.AIR),
+                        PiecePosition(row - 1, col + 1, Piece.WHITE_PAWN),
+                    ]))
+                # BLACK PAWN ADVANCE
+                if player == "black" \
+                and piece == Piece.BLACK_PAWN \
+                and row < 7 \
+                and self.get_piece(row + 1, col) == Piece.AIR:
+                    rtn.append(self.with_pieces([
+                        PiecePosition(row,col,Piece.AIR),
+                        PiecePosition(row + 1, col, Piece.BLACK_PAWN),
+                    ]))
+                # BLACK PAWN CAPTURE LEFT
+                if player == "black" \
+                and piece == Piece.BLACK_PAWN \
+                and row < 7 \
+                and col > 0 \
+                and self.get_piece(row + 1, col - 1).colour == "white":
+                    rtn.append(self.with_pieces([
+                        PiecePosition(row,col,Piece.AIR),
+                        PiecePosition(row + 1, col - 1, Piece.BLACK_PAWN),
+                    ]))
+                # BLACK PAWN CAPTURE RIGHT
+                if player == "black" \
+                and piece == Piece.BLACK_PAWN \
+                and row < 7 \
+                and col < 7 \
+                and self.get_piece(row + 1, col + 1).colour == "white":
+                    rtn.append(self.with_pieces([
+                        PiecePosition(row,col,Piece.AIR),
+                        PiecePosition(row + 1, col + 1, Piece.BLACK_PAWN),
                     ]))
 
         return rtn
