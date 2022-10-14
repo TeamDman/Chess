@@ -1,30 +1,31 @@
 from __future__ import annotations
-from dataclasses import dataclass
-from enum import unique, auto, Enum
-
+from dataclasses import dataclass, replace
+from typing import List
 from torch import Tensor
 import torch
+from definitions import Piece, black_pieces, PlayerColour, white_pieces
 
-@unique
-class Piece(Enum):
-    AIR = 0
-    BLACK_PAWN = auto()
-    BLACK_ROOK = auto()
-    BLACK_KNIGHT = auto()
-    BLACK_BISHOP = auto()
-    BLACK_QUEEN = auto()
-    BLACK_KING = auto()
-    WHITE_PAWN = auto()
-    WHITE_ROOK = auto()
-    WHITE_KNIGHT = auto()
-    WHITE_BISHOP = auto()
-    WHITE_QUEEN = auto()
-    WHITE_KING = auto()
-
+def can_move(player: PlayerColour, piece: Piece) -> bool:
+    if player == "white" \
+    and piece.value >= Piece.WHITE_PAWN.value \
+    and piece.value <= Piece.WHITE_KING.value:
+        return True
+    if player == "black" \
+    and piece.value >= Piece.BLACK_PAWN.value \
+    and piece.value <= Piece.BLACK_KING.value:
+        return True
+    return False
 
 @dataclass(frozen=True)
+class PiecePosition:
+    row: int
+    col: int
+    piece: Piece
+
+BoardTensor = Tensor # shape=(8,8,len(pieces))
+@dataclass(frozen=True)
 class State:
-    board: Tensor # shape=(8,8,len(pieces))
+    board: BoardTensor
     black_left_rook_moved: bool = False
     black_right_rook_moved: bool = False
     black_king_moved: bool = False
@@ -51,8 +52,34 @@ class State:
         # board[board==torch.zeros(7), Piece.AIR.value] = 12
         return State(board=board)
 
-    def is_checkmate(self) -> bool:
-        pass
+    def with_pieces(self, pieces: List[PiecePosition]) -> State:
+        new_board = self.board.clone()
+        for piece in pieces:
+            new_board[piece.row, piece.col, :] = 0
+            new_board[piece.row, piece.col, piece.piece.value] = 1
+        return replace(self, board=new_board)
+
+    def get_piece(self, row: int, col: int) -> Piece:
+        return Piece(int(self.board[row, col].argmax()))
+
+    def get_valid_moves(self, player: PlayerColour) -> List[State]:
+        rtn: List[State] = []
+        for row in range(8):
+            for col in range(8):
+                piece = self.get_piece(row, col)
+                if player == "white" \
+                and piece == Piece.WHITE_PAWN \
+                and row < 7 \
+                and self.get_piece(row - 1, col) == Piece.AIR:
+                    rtn.append(self.with_pieces([
+                        PiecePosition(row,col,Piece.AIR),
+                        PiecePosition(row - 1, col, Piece.WHITE_PAWN),
+                    ]))
+
+        return rtn
+
+    def show(self) -> None:
+        print(self.board.argmax(dim=2))
 
 class Game:
     state: State
