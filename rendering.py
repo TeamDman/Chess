@@ -138,7 +138,7 @@ def render_board(
     # fill: Dict[Square, str] = {},
     size: Optional[int] = None
 ) -> None:
-    orientation = orientation != "white"
+    orientation = orientation == "white"
 
     margin = 15 if coordinates else 0
     svg = _svg(8 * SQUARE_SIZE + 2 * margin, size)
@@ -196,7 +196,9 @@ def render_board(
                 "opacity": square_opacity if square_opacity < 1.0 else None,
             }))
 
-            piece = board.get_piece(row, col)
+            # correct the index since we use wacky indexing compared to the chesslib code
+            piece = board.get_piece(7-row, col)
+            
             if piece != Piece.AIR:
                 id=piece.name.lower().replace("_","-")
                 href = f"#{id}"
