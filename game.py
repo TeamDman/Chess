@@ -18,6 +18,7 @@ def can_move(player: PlayerColour, piece: Piece) -> bool:
     return False
 
 BoardTensor = Tensor # shape=(8,8,len(pieces))
+BatchedBoardTensor = Tensor
 @dataclass(frozen=True)
 class State:
     board: BoardTensor
@@ -224,6 +225,10 @@ class State:
                             # move only valid by replacing the pawn with the promoted piece
                             rtn.append(move.with_pieces([(7,col, promoted)]))
         
+        # todo: castling
+        # todo: en-passant
+        # todo: threefold repetition
+
         return rtn
 
     def show(self) -> None:
