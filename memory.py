@@ -1,11 +1,14 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
 import random
-from typing import Generic, List, TypeVar
-from game import BatchedBoardTensor, BatchedBoardMetadataTensor
+from typing import TYPE_CHECKING, Generic, List, TypeVar
 from torch import Tensor
 import torch
+
+if TYPE_CHECKING:
+    from game import BatchedBoardTensor, BatchedBoardMetadataTensor
 
 @dataclass(frozen=True)
 class TransitionTensorBatch:

@@ -56,6 +56,25 @@ class State:
         return torch.cat(a), torch.cat(b)
 
     @staticmethod
+    def from_tensors(board: BatchedBoardTensor, meta: BatchedBoardMetadataTensor) -> List[State]:
+        assert board.shape[0] == meta.shape[0]
+        batch_size = board.shape[0]
+        rtn = []
+        for i in range(batch_size):
+            rtn.append(State(
+                board=board[i],
+                black_left_rook_moved=meta[i][0],
+                black_right_rook_moved=meta[i][1],
+                black_king_moved=meta[i][2],
+                white_left_rook_moved=meta[i][3],
+                white_right_rook_moved=meta[i][4],
+                white_king_moved=meta[i][5],
+                is_white_turn=meta[i][6],
+            ))
+        return rtn
+            
+
+    @staticmethod
     def get_empty_state() -> State:
         return State(board=torch.zeros(8,8,len(Piece)))
 
