@@ -1,10 +1,10 @@
 from __future__ import annotations
-from collections import namedtuple
 from dataclasses import dataclass, replace
-from typing import List, Tuple
+from typing import List, Tuple, Union
+from typing_extensions import Literal
 from torch import Tensor
 import torch
-from definitions import Piece, black_pieces, PlayerColour, white_pieces
+from definitions import Piece, PlayerColour
 
 def can_move(player: PlayerColour, piece: Piece) -> bool:
     if player == "white" \
@@ -19,6 +19,14 @@ def can_move(player: PlayerColour, piece: Piece) -> bool:
 
 BoardTensor = Tensor # shape=(8,8,len(pieces))
 BatchedBoardTensor = Tensor
+BatchedBoardMetadataTensor = Tensor
+BatchedQValueTensor = Tensor
+
+BOARD_LEN = 8*8*len(Piece)
+BOARD_SHAPE = (-1,8,8,len(Piece))
+META_LEN = 7
+META_SHAPE = (-1, META_LEN)
+
 @dataclass(frozen=True)
 class State:
     board: BoardTensor
@@ -28,6 +36,24 @@ class State:
     white_left_rook_moved: bool = False
     white_right_rook_moved: bool = False
     white_king_moved: bool = False
+    is_white_turn: bool = True
+
+    def as_tensor_batch(self) -> Tuple[BatchedBoardTensor, BatchedBoardMetadataTensor]:
+        return self.board.unsqueeze(0), torch.as_tensor([(
+            self.black_left_rook_moved,
+            self.black_right_rook_moved,
+            self.black_king_moved,
+            self.white_left_rook_moved,
+            self.white_right_rook_moved,
+            self.white_king_moved,
+            self.is_white_turn,
+        )], dtype=torch.float32)
+
+    @staticmethod
+    def cat(states: List[State]) -> Tuple[BatchedBoardTensor, BatchedBoardMetadataTensor]:
+        a = [s.as_tensor_batch() for s in states]
+        a,b = zip(*a)
+        return torch.cat(a), torch.cat(b)
 
     @staticmethod
     def get_empty_state() -> State:
@@ -229,13 +255,26 @@ class State:
         # todo: en-passant
         # todo: threefold repetition
 
+        rtn = [replace(v, is_white_turn=not v.is_white_turn) for v in rtn]
         return rtn
 
-    def show(self) -> None:
-        print(self.board.argmax(dim=2))
+    def show(self, style:Union[Literal["text"],Literal["svg"]] = "svg", **kwargs) -> None:
+        if style == "text":
+            print(self.board.argmax(dim=2))
+        else:
+            from IPython.display import display
+            from rendering import board as board_svg
+            display(board_svg(self, **kwargs))
 
-class Game:
-    state: State
+    def count_piece(self, piece: Piece) -> bool:
+        return (self.board.argmax(dim=2) == piece.value).sum()
 
-    def __init__(self) -> None:
-        self.state = State.get_starting_state()
+    # def is_checkmate(self, active_player: PlayerColour) -> bool:
+    #     # it's a checkmate if the active player can make a move
+    #     # that results in a state where the opponent has no king
+    #     candidates = self.get_valid_moves(active_player)
+    #     kill = Piece.BLACK_KING if active_player == "white" else Piece.WHITE_KING
+    #     for board in candidates:
+    #         if board.count_piece(kill) == 0:
+    #             return True
+    #     return False
