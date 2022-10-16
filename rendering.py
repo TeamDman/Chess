@@ -54,8 +54,8 @@ CHECK_GRADIENT = """<radialGradient id="check_gradient" r="0.5"><stop offset="0%
 DEFAULT_COLORS = {
     "square light": "#ffce9e",
     "square dark": "#d18b47",
-    "square dark lastmove": "#aaa23b",
-    "square light lastmove": "#cdd16a",
+    "square dark changed": "#aaa23b",
+    "square light changed": "#cdd16a",
     "margin": "#212121",
     "coord": "#e5e5e5",
     "arrow green": "#15781B80",
@@ -131,6 +131,7 @@ def piece(piece: Piece, size: Optional[int] = None) -> str:
 
 def board(
     board: Optional[State] = None,
+    previous_board: Optional[State] = None,
     *, # force named params
     orientation: PlayerColour = "white", 
     coordinates: bool = True,
@@ -182,8 +183,13 @@ def board(
             
             cls = ["square", "light" if (row+col)%2==1 else "dark"]
 
+            # correct the index since we use wacky indexing compared to the chesslib code
+            piece = board.get_piece(7-row, col)
+            if previous_board is not None and piece != previous_board.get_piece(7-row, col):
+                cls.append("changed")
 
             square_color, square_opacity = _select_color(colours, " ".join(cls))
+
 
             ET.SubElement(svg, "rect", _attrs({
                 "x": x,
@@ -196,9 +202,6 @@ def board(
                 "opacity": square_opacity if square_opacity < 1.0 else None,
             }))
 
-            # correct the index since we use wacky indexing compared to the chesslib code
-            piece = board.get_piece(7-row, col)
-
             if piece != Piece.AIR:
                 id=piece.name.lower().replace("_","-")
                 href = f"#{id}"
@@ -207,6 +210,8 @@ def board(
                     "xlink:href": href,
                     "transform": f"translate({x:d}, {y:d})",
                 })
+
+
 
             # try:
             #     fill_color, fill_opacity = _color(fill[square])

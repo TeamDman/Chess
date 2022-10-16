@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 from definitions import Piece
-from game import BOARD_LEN, BOARD_SHAPE, META_LEN, META_SHAPE, BatchedBoardMetadataTensor, BatchedBoardTensor, BoardTensor, State, BatchedQValueTensor
+from game import BOARD_LEN, BOARD_SHAPE, META_LEN, META_SHAPE, BoardMetadataTensorBatch, BoardTensorBatch, BoardTensor, State, QValueTensorBatch, StateTensorBatch
 
 class Actor(nn.Module):
     def __init__(self) -> None:
@@ -23,25 +23,31 @@ class Actor(nn.Module):
 
     def forward(
         self,
-        board: BatchedBoardTensor,
-        meta: BatchedBoardMetadataTensor
-    ) -> Tuple[BatchedBoardTensor, BatchedBoardMetadataTensor]:
-        x: torch.Tensor = self.conv1(board)
+        state: StateTensorBatch,
+    ) -> StateTensorBatch:
+        x: torch.Tensor = self.conv1(state.board)
         x = self.batch1(x)
         x = F.relu(x)
         x = self.conv2(x)
         x = self.batch2(x)
         x = F.relu(x)
-        x = torch.cat((x.flatten(start_dim=1), board.flatten(start_dim=1)), dim=1)
+        x = torch.cat((
+            x.flatten(start_dim=1),
+            state.board.flatten(start_dim=1),
+            state.metadata,
+        ), dim=1)
         x = self.hidden1(x)
         x = F.relu(x)
         x = self.hidden2(x)
         x = F.relu(x)
-        x = torch.cat((x, board.flatten(start_dim=1)), dim=1)
+        x = torch.cat((x, state.board.flatten(start_dim=1)), dim=1)
         x_board, x_meta = self.out_board(x), self.out_meta(x)
         x_board = x_board.reshape(BOARD_SHAPE)
         x_meta = x_meta.reshape(META_SHAPE)
-        return x_board, x_meta
+        return StateTensorBatch(
+            board=x_board,
+            metadata=x_meta
+        )
 
 
 class Critic(nn.Module):
@@ -67,33 +73,34 @@ class Critic(nn.Module):
 
     def forward(
         self,
-        board: BatchedBoardTensor,
-        meta: BatchedBoardMetadataTensor,
-        proto_actions: BatchedBoardTensor,
-        proto_actions_meta: BatchedBoardMetadataTensor,
-    ) -> BatchedQValueTensor:
-        batch_size = proto_actions.shape[0]
-        x_board: torch.Tensor = self.board_conv1(board)
+        state: StateTensorBatch,
+        action: StateTensorBatch,
+    ) -> QValueTensorBatch:
+        x_board: Tensor = state.board
+        x_board = self.board_conv1(x_board)
         x_board = self.board_batch1(x_board)
         x_board = F.relu(x_board)
         x_board = self.board_conv2(x_board)
         x_board = self.board_batch2(x_board)
         x_board = F.relu(x_board)
-        x_board = x_board.repeat((batch_size,1,1,1))
-        meta = meta.repeat((batch_size,1))
-        x_action: torch.Tensor = self.action_conv1(proto_actions)
+        x_board_meta: Tensor = state.metadata
+
+        x_action: Tensor = action.board
+        x_action= self.action_conv1(x_action)
         x_action = self.action_batch1(x_action)
         x_action = F.relu(x_action)
         x_action = self.action_conv2(x_action)
         x_action = self.action_batch2(x_action)
         x_action = F.relu(x_action)
+        x_action_meta: Tensor = action.metadata
 
-        latent = torch.cat((
+        latent: Tensor  = torch.cat((
             x_board.flatten(start_dim=1),
-            meta,
+            x_board_meta,
             x_action.flatten(start_dim=1),
-            proto_actions_meta,
+            x_action_meta,
         ), dim=1)
+
         latent = self.hidden1(latent)
         latent = F.relu(latent)
         latent = self.hidden2(latent)

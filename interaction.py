@@ -11,18 +11,15 @@ def interactive_random_game() -> None:
     def show():
         nonlocal i
         clear_output()
-        display(board_svg(history[i], size=500))
+        display(board_svg(history[i], history[i-1] if i > 0 else None, size=500))
         display(prev_button)
         display(next_button)
         print(i)
 
-    turn: PlayerColour = "white"
     def next_clicked(arg):
         nonlocal i
-        nonlocal turn
         if i == len(history) - 1:
-            candidates = history[-1].get_valid_moves(player=turn)
-            turn = "black" if turn == "white" else "white"
+            candidates = history[-1].get_valid_moves()
             history.append(random.choice(candidates))
         i+=1
         show()

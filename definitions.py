@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import List, Union
 from typing_extensions import Literal
 PlayerColour = Union[Literal["white"], Literal["black"]]
@@ -30,7 +31,7 @@ class Piece(Enum):
         return letter
 
     @property
-    def role(self) -> str:
+    def role(self) -> Role:
         return self.name[6:].lower()
 
     @property
@@ -56,4 +57,13 @@ black_pieces = [
     Piece.BLACK_BISHOP,
     Piece.BLACK_QUEEN,
     Piece.BLACK_KING,
+]
+
+Role = Union[
+    Literal["rook"],
+    Literal["knight"],
+    Literal["king"],
+    Literal["queen"],
+    Literal["bishop"],
+    Literal["pawn"]
 ]
